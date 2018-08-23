@@ -1,0 +1,10 @@
+*.sw[opn]
+.DS_Store
+
+_back/
+
+built/
+doc/
+**/*.log
+
+node_modules/*
