@@ -1,4 +1,6 @@
 import { Graph } from './graph'
+import * as fs from 'fs'
+import * as path from 'path'
 
 type Dot = {
   index: number
@@ -112,6 +114,7 @@ abstract class BaseBfs {
         } else {
           if (onMarkRejected) {
             onMarkRejected.call(this, v, w)
+            return
           }
         }
       }
@@ -151,7 +154,7 @@ class Tainter extends BaseBfs {
 
 class Checker extends BaseBfs {
   sourceColor: string
-  mismatched: boolean
+  markRejected: boolean
 
   constructor(dotty: DottyPuzzle, sc: string) {
     super()
@@ -164,9 +167,6 @@ class Checker extends BaseBfs {
   predicate(v: number, w: number) {
     const d2 = this.dotty.dots[w]
     const shouldMark = d2.color === this.sourceColor
-    // if (shouldMark) {
-    //   console.log('should mark', d2)
-    // }
     return { shouldMark }
   }
 
@@ -174,7 +174,7 @@ class Checker extends BaseBfs {
     this.bfs(this.dotty.graph, 0, this.predicate.bind(this), this.onMarkRejected)
     const headColor = this.dotty.dots[0].color
     let passed = true
-    if (this.mismatched) passed = false
+    if (this.markRejected) passed = false
     else {
       this.dotty.dots.forEach((dot) => {
         if (dot.color != headColor) {
@@ -190,7 +190,7 @@ class Checker extends BaseBfs {
 
   protected onMarkRejected() {
     // console.log('onMarkRejected')
-    this.mismatched = true
+    this.markRejected = true
   }
 
   doMark(v: number) {
@@ -231,7 +231,10 @@ class Solver {
     this.runStep(0, this.dotty.dots)
     return {
       passed: this.passed,
-      steps: this.stepSnapshots.map((snapshot) => snapshot.color),
+      moves: this.stepSnapshots.map((snapshot) => {
+        console.log('snapshot', snapshot)
+        return snapshot.color
+      }),
     }
   }
 
@@ -255,8 +258,8 @@ class Solver {
 
       // console.log('check result', cr)
       if (cr.passed) {
-        // console.log(`passed at step ${step}`)
-        // console.log(this.stepSnapshots)
+        console.log(`passed at step ${step}`)
+        console.log(this.stepSnapshots)
         this.passed = true
         return
       }
@@ -282,15 +285,25 @@ function solveDotty(dotty: DottyPuzzle) {
   const result = solver.solve()
   if (result.passed) {
     console.info('passed')
-    console.log(result.steps)
+    console.log(result.moves)
   } else {
     console.warn(`Can not solve the puzzle in ${maxSteps}`)
   }
 }
 
 function main() {
+  const argv = process.argv
+  const filename = argv[2]
+  let inputData
+  if (filename) {
+    const cwd = process.cwd()
+    inputData = fs.readFileSync(path.resolve(cwd, filename)).toString()
+  } else {
+    console.warn('Please input data')
+    process.exit(0)
+  }
   // const dotty = parseInput(data1)
-  const dotty = parseInput(data2)
+  const dotty = parseInput(inputData)
   solveDotty(dotty)
 }
 
